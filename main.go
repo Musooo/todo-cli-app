@@ -3,31 +3,28 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 )
 
 var fileName string = "logs.json"
 
 func main() {
-	// fmt.Println(os.Args[1])
+	db, err := NewPostgresDb()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.db.Close()
 
 	switch os.Args[1] {
-	case "login":
-		fmt.Printf("hello %s with the pass %s \n", os.Args[2], os.Args[3])
-		//check login credentials
-		data := getLogs()
-		user := NewAccount(os.Args[2], os.Args[3], 0)
-		userLog := NewLogged(*user)
-		jsonWriting(*userLog, *data)
-	case "logout":
-		fmt.Print("logout all user")
-		data := getLogs()
-		logout(os.Args[2], *data)
-	case "list":
-		fmt.Print("print all the todos")
-	default:
-		fmt.Printf("%s is not a recognised command:", os.Args[1])
-		os.Exit(1)
+		case "login":
+		case "register":
+		case "logout":
+		case "list":
+			fmt.Print("print all the todos")
+		default:
+			fmt.Printf("%s is not a recognised command:", os.Args[1])
+			os.Exit(1)
 	}
 
 }
@@ -57,7 +54,6 @@ func getLogs() *Data {
             }
         }
 	}
-
 	return &data
 }
 

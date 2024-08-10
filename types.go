@@ -11,6 +11,15 @@ type Logged struct {
 	Status bool `json:"status"`
 }
 
+type ToDo struct {
+	ID int `json:"id"`
+	Text string `json:text`
+}
+
+type ToDoArr struct {
+	ToDOs []ToDo `json:todos`
+}
+
 type Data struct {
 	Accounts []Logged `json:"accounts"`
 }
