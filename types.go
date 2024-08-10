@@ -13,11 +13,11 @@ type Logged struct {
 
 type ToDo struct {
 	ID int `json:"id"`
-	Text string `json:text`
+	Text string `json:"text"`
 }
 
 type ToDoArr struct {
-	ToDOs []ToDo `json:todos`
+	ToDOArr []ToDo `json:"todos"`
 }
 
 type Data struct {

@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.db.Close()
+	defer db.db.Close() //i love defer
 
 	switch os.Args[1] {
 		case "login":
