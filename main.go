@@ -18,6 +18,13 @@ func main() {
 
 	switch os.Args[1] {
 		case "login":
+			var user *Logged
+			user, err = db.GetUserByUserName(&os.Args[2], &os.Args[3])
+			if err != nil {
+				log.Fatal(err)
+			}
+			data := getLogs()
+			jsonWriting(*user, *data)
 		case "register":
 		case "logout":
 		case "list":

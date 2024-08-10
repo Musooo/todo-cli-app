@@ -10,7 +10,7 @@ import (
 
 type AccountActions interface {
 	CreateAccount(*Account) error
-	GetAccountByID(int) (*Account, error)
+	GetUserByUserName(*string, *string) (*Account, error)
 }
 
 type PostgresDb struct {
@@ -60,10 +60,10 @@ func (s *PostgresDb) createAccountTable() error {
 
 func (s *PostgresDb) createToDoTable() error {
 	query := `create table if not exists todo (
-		id PRIMARY KEY,
-		account_id INT REFERENCES account(id),
+		id INT PRIMARY KEY REFERENCES account(id),
 		text VARCHAR(255),
-		serial_number SERIAL
+		serial_number SERIAL,
+		status bool
 	)`
 
 	_, err := s.db.Exec(query)
@@ -97,7 +97,7 @@ func (s *PostgresDb) CreateAccount(acc *Account) error{
 }
 
 func (s *PostgresDb) IsAccountTaken(userName *string) (bool, error){
-	rows, err := s.db.Query("select * from account where user_name = $1", &userName)
+	rows, err := s.db.Query("select * from account where user_name = $1", *userName)
 	if err != nil{
 		log.Fatal(err)
 	}
@@ -111,8 +111,28 @@ func (s *PostgresDb) IsAccountTaken(userName *string) (bool, error){
 }
 
 func hashPassword(password string) (string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+    bytes, err := bcrypt.GenerateFromPassword([]byte(password), 16)
     return string(bytes), err
+}
+
+func (s *PostgresDb) GetUserByUserName(userName, password *string) (*Logged, error){
+	rows, err := s.db.Query("select * from account where user_name = $1", *userName)
+	if err != nil{
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var id int
+	var passwordGot string
+	if err = rows.Scan(&id, &userName, &passwordGot); err != nil {
+        log.Fatal(err)
+    }
+	status := checkPasswordHash(*password, passwordGot)
+	if status{
+		return NewLogged(*NewAccount(*userName, *password, id)), nil
+	}
+	log.Fatal("password wrong")
+	return nil, nil
 }
 
 func checkPasswordHash(password, hash string) bool {
