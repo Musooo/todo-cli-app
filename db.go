@@ -117,15 +117,11 @@ func hashPassword(password string) (string, error) {
 }
 
 func (s *PostgresDb) GetUserByUserName(userName, password *string) (*Logged, error){
-	rows, err := s.db.Query("select * from account where user_name = $1", *userName)
-	if err != nil{
-		log.Fatal(err)
-	}
-	defer rows.Close()
+	row := s.db.QueryRow("select * from account where user_name = $1", *userName)
 
 	var id int
 	var passwordGot string
-	if err = rows.Scan(&id, &userName, &passwordGot); err != nil {
+	if err := row.Scan(&id, &userName, &passwordGot); err != nil {
         log.Fatal(err)
     }
 	status := checkPasswordHash(*password, passwordGot)
