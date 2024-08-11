@@ -15,7 +15,10 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.db.Close() //i love defer
-
+	
+	if err := db.Init(); err != nil {
+        log.Fatalf("Failed to initialize database: %v", err)
+    }
 	switch os.Args[1] {
 		case "login":
 			var user *Logged
@@ -26,7 +29,20 @@ func main() {
 			data := getLogs()
 			jsonWriting(*user, *data)
 		case "register":
+			var canCreate bool
+			canCreate,err = db.IsAccountTaken(&os.Args[2])
+			if err != nil{
+				log.Fatal(err)
+			}
+			if !canCreate{
+				acc := NewAccount(os.Args[2], os.Args[3], 0)
+				db.CreateAccount(acc)
+			}else{
+				fmt.Println("username already used")
+			}
 		case "logout":
+			data := getLogs()
+			logout(os.Args[2], *data)
 		case "list":
 			fmt.Print("print all the todos")
 		default:

@@ -34,6 +34,10 @@ func NewPostgresDb() (*PostgresDb, error) {
 }
 
 func (s *PostgresDb) Init() error {
+	if err := s.db.Ping(); err != nil {
+        log.Fatal(err)
+    }
+
 	err := s.createAccountTable()
 	if err != nil {
 		return err
@@ -48,24 +52,25 @@ func (s *PostgresDb) Init() error {
 }
 
 func (s *PostgresDb) createAccountTable() error {
-	query := `create table if not exists account (
-		id serial primary key,
-		user_name varchar(100),
-		password varchar(100)
+	query := `
+	CREATE TABLE IF NOT EXISTS account (
+		id SERIAL PRIMARY KEY,
+		user_name VARCHAR(100) NOT NULL UNIQUE,
+		password VARCHAR(100) NOT NULL
 	)`
-
 	_, err := s.db.Exec(query)
 	return err
 }
 
 func (s *PostgresDb) createToDoTable() error {
-	query := `create table if not exists todo (
-		id INT PRIMARY KEY REFERENCES account(id),
-		text VARCHAR(255),
-		serial_number SERIAL,
-		status bool
+	query := `
+	CREATE TABLE IF NOT EXISTS todo (
+		id SERIAL PRIMARY KEY,
+		account_id INT NOT NULL REFERENCES account(id),
+		text VARCHAR(255) NOT NULL,
+		status BOOLEAN NOT NULL,
+		serial_number SERIAL
 	)`
-
 	_, err := s.db.Exec(query)
 	return err
 }
@@ -96,19 +101,15 @@ func (s *PostgresDb) CreateAccount(acc *Account) error{
 	return nil
 }
 
-func (s *PostgresDb) IsAccountTaken(userName *string) (bool, error){
-	rows, err := s.db.Query("select * from account where user_name = $1", *userName)
-	if err != nil{
+func (s *PostgresDb) IsAccountTaken(userName *string) (bool, error) {
+	var exists bool
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM account WHERE user_name = $1)", *userName).Scan(&exists)
+	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
-
-	if rows.Next(){
-		return true, nil
-	}
-
-	return false, nil
+	return exists, nil
 }
+
 
 func hashPassword(password string) (string, error) {
     bytes, err := bcrypt.GenerateFromPassword([]byte(password), 16)
