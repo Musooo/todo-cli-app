@@ -14,10 +14,11 @@ type Logged struct {
 type ToDo struct {
 	ID int `json:"id"`
 	Text string `json:"text"`
+	Status bool `json:"status"`
 }
 
 type ToDoArr struct {
-	ToDOArr []ToDo `json:"todos"`
+	ToDos []ToDo `json:"todos"`
 }
 
 type Data struct {
@@ -36,5 +37,13 @@ func NewLogged(user Account) *Logged{
 	return &Logged{
 		UserName: user.UserName,
 		Status: true,
+	}
+}
+
+func NewTodo(id int, text string) *ToDo{
+	return &ToDo{
+		ID: id,
+		Text: text,
+		Status: false,
 	}
 }

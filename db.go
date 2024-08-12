@@ -11,6 +11,8 @@ import (
 type AccountActions interface {
 	CreateAccount(*Account) error
 	GetUserByUserName(*string, *string) (*Account, error)
+	GetUserIdByUserName(*string) int
+	CreateTodo(*string)
 }
 
 type PostgresDb struct {
@@ -101,6 +103,22 @@ func (s *PostgresDb) CreateAccount(acc *Account) error{
 	return nil
 }
 
+func (s *PostgresDb) CreateTodo(todo ToDo){
+	query := `insert into todo
+	(account_id, text, status)
+	values ($1, $2, $3)`
+	_, err := s.db.Query(
+		query,
+		todo.ID,
+		todo.Text,
+		todo.Status,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (s *PostgresDb) IsAccountTaken(userName *string) (bool, error) {
 	var exists bool
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM account WHERE user_name = $1)", *userName).Scan(&exists)
@@ -132,7 +150,18 @@ func (s *PostgresDb) GetUserByUserName(userName, password *string) (*Logged, err
 	return nil, nil
 }
 
+func (s *PostgresDb) GetUserIdByUserName(userName *string) int{
+	row := s.db.QueryRow("select * from account where user_name = $1", *userName)
+	var id int
+	var passwordGot string
+	if err := row.Scan(&id, &userName, &passwordGot); err != nil {
+        log.Fatal(err)
+    }
+	return id
+}
+
 func checkPasswordHash(password, hash string) bool {
     err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
     return err == nil
 }
+
