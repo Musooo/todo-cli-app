@@ -29,6 +29,9 @@ func main() {
 			}
 			data := getLogs()
 			jsonWriting(*user, *data)
+			data = getLogs()
+			logoutAccs(os.Args[2], *data)
+			clearTodosJson()
 		case "register":
 			var canCreate bool
 			canCreate,err = db.IsAccountTaken(&os.Args[2])
@@ -43,17 +46,19 @@ func main() {
 				jsonWriting(*user, *data)
 				data = getLogs()
 				logoutAccs(os.Args[2], *data)
+				clearTodosJson()
 			}else{
 				fmt.Println("username already used")
 			}
 		case "logout":
 			data := getLogs()
-			logout(os.Args[2], *data)
+			logout(os.Args[2], *data) //TODO maybe make it so that you don't need a name, only one acc at a time can be true
+			clearTodosJson()
 		case "addTodo":
 			userName, proced := checkLogged()
 			if proced {
 				id := db.GetUserIdByUserName(&userName)
-				todo := NewTodo(id, os.Args[2])
+				todo := NewTodo(id, os.Args[2]) //maybe more arg
 				db.CreateTodo(*todo)
 				todoArr := getTodos()
 				jsonWTodo(*todo,*todoArr)
@@ -160,8 +165,22 @@ func jsonWTodo(todo ToDo, todoArr ToDoArr){
 }
 
 func jsonWriting(user Logged, data Data) {
-	data.Accounts = append(data.Accounts, user)
+	proc, index := isUserInLogs(&user.UserName,&data)
+	if proc{
+		data.Accounts[index].Status = true 
+	}else{
+		data.Accounts = append(data.Accounts, user)
+	}
 	updateJson(data)
+}
+
+func isUserInLogs(userName *string, data *Data) (bool, int) {
+	for i:=0; i< len(data.Accounts); i++ {
+		if data.Accounts[i].UserName == *userName{
+			return true,i
+		}
+	}
+	return false, -1
 }
 
 func logout(userName string, data Data) {
@@ -188,9 +207,17 @@ func logoutAccs(userName string, data Data){
 func checkLogged() (string, bool){
 	data := getLogs()
 	for i:=0; i< len(data.Accounts); i++ {
-		if data.Accounts[i].Status == true{
+		if data.Accounts[i].Status{
 			return data.Accounts[i].UserName, true
 		}
 	}
 	return "err", false
+}
+
+func clearTodosJson(){
+	err := os.WriteFile(fileTodo, []byte{}, 0644)
+	if err != nil {
+		fmt.Println("Error during filewriting:", err)
+		return
+	}
 }
