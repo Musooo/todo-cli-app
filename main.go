@@ -37,6 +37,11 @@ func main() {
 			if !canCreate{
 				acc := NewAccount(os.Args[2], os.Args[3], 0)
 				db.CreateAccount(acc)
+				data := getLogs()
+				user := NewLogged(*NewAccount(os.Args[2], os.Args[3], -1))
+				jsonWriting(*user, *data)
+				data = getLogs()
+				logoutAccs(os.Args[2], *data)
 			}else{
 				fmt.Println("username already used")
 			}
@@ -108,4 +113,15 @@ func logout(userName string, data Data) {
 			break
 		}
 	}
+}
+
+
+func logoutAccs(userName string, data Data){
+	for i:=0; i< len(data.Accounts); i++ {
+		if data.Accounts[i].UserName != userName {
+			data.Accounts[i].Status = false
+			
+		}
+	}
+	updateJson(data)
 }
