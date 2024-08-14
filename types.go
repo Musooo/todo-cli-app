@@ -12,6 +12,7 @@ type Logged struct {
 }
 
 type ToDo struct {
+	UserId int `json:"userid"`
 	ID int `json:"id"`
 	Text string `json:"text"`
 	Status bool `json:"status"`
@@ -42,7 +43,8 @@ func NewLogged(user Account) *Logged{
 
 func NewTodo(id int, text string) *ToDo{
 	return &ToDo{
-		ID: id,
+		ID: -1,
+		UserId: id,
 		Text: text,
 		Status: false,
 	}

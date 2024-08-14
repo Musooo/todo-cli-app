@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 )
 
 var fileName string = "logs.json"
@@ -32,6 +33,11 @@ func main() {
 			data = getLogs()
 			logoutAccs(os.Args[2], *data)
 			clearTodosJson()
+			todoArr, err :=db.GetTodos(db.GetUserIdByUserName(&os.Args[2]))
+			if err != nil {
+				log.Fatal(err)
+			}
+			updateJsonTodo(todoArr)
 		case "register":
 			var canCreate bool
 			canCreate,err = db.IsAccountTaken(&os.Args[2])
@@ -55,20 +61,43 @@ func main() {
 			logout(os.Args[2], *data) //TODO maybe make it so that you don't need a name, only one acc at a time can be true
 			clearTodosJson()
 		case "addTodo":
-			userName, proced := checkLogged()
-			if proced {
+			userName, prosed := checkLogged()
+			if prosed {
 				id := db.GetUserIdByUserName(&userName)
 				todo := NewTodo(id, os.Args[2]) //maybe more arg
-				db.CreateTodo(*todo)
+				todoid, err := db.CreateTodo(*todo)
+				if err != nil {
+					log.Fatal(err)
+				}
+				todo.ID = todoid
 				todoArr := getTodos()
 				jsonWTodo(*todo,*todoArr)
 			}else {
 				fmt.Print("you are not logged in")
 			}
+		case "completeTodo":
+			_, prosed := checkLogged()
+			if prosed {
+				idInt, err := strconv.Atoi(os.Args[2])
+				if err != nil { 
+					log.Fatal(err)
+				}
+				db.RemoveTodo(idInt)
+				todoArr := getTodos()
+				removeTodo(todoArr, idInt)
+			}else {
+				fmt.Print("you are not logged in")
+			}
 		case "list":
-			fmt.Print("print all the todos")
+			_, prosed := checkLogged()
+			if prosed {
+				toDoArr := getTodos()
+				fmt.Print(toDoArr)
+			}else {
+				fmt.Print("you are not logged in")
+			}
 		default:
-			fmt.Printf("%s is not a recognised command:", os.Args[1])
+			fmt.Printf("%s is not a recognized command:", os.Args[1])
 			os.Exit(1)
 	}
 
@@ -86,7 +115,7 @@ func getLogs() *Data {
 			return nil
 		}
 
-		// dedcoding
+		// decoding
 		if len(fileContent) == 0 {
             // File is empty, initialize data as an empty object
             data = Data{}
@@ -114,7 +143,7 @@ func getTodos() *ToDoArr{
 			return nil
 		}
 
-		// dedcoding
+		// decoding
 		if len(fileContent) == 0 {
             // File is empty, initialize data as an empty object
             toDOArr = ToDoArr{}
@@ -219,5 +248,15 @@ func clearTodosJson(){
 	if err != nil {
 		fmt.Println("Error during filewriting:", err)
 		return
+	}
+}
+
+func removeTodo(todoArr *ToDoArr, todoId int){
+	for i:=0; i<len(todoArr.ToDos); i++{
+		if todoArr.ToDos[i].ID==todoId{
+			todoArr.ToDos = append(todoArr.ToDos[:i], todoArr.ToDos[i+1:]...)
+			updateJsonTodo(*todoArr)
+            return
+		}
 	}
 }

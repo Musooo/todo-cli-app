@@ -13,6 +13,8 @@ type AccountActions interface {
 	GetUserByUserName(*string, *string) (*Account, error)
 	GetUserIdByUserName(*string) int
 	CreateTodo(*string)
+	GetTodos(string) (ToDoArr, error)
+	RemoveTodo(int) error
 }
 
 type PostgresDb struct {
@@ -103,20 +105,23 @@ func (s *PostgresDb) CreateAccount(acc *Account) error{
 	return nil
 }
 
-func (s *PostgresDb) CreateTodo(todo ToDo){
+func (s *PostgresDb) CreateTodo(todo ToDo) (int, error){
 	query := `insert into todo
 	(account_id, text, status)
-	values ($1, $2, $3)`
-	_, err := s.db.Query(
+	values ($1, $2, $3)
+	returning id`
+	var id int
+	err := s.db.QueryRow(
 		query,
-		todo.ID,
+		todo.UserId,
 		todo.Text,
 		todo.Status,
-	)
+	).Scan(&id)
 
 	if err != nil {
-		log.Fatal(err)
+		return 0,err
 	}
+	return id, nil
 }
 
 func (s *PostgresDb) IsAccountTaken(userName *string) (bool, error) {
@@ -165,3 +170,35 @@ func checkPasswordHash(password, hash string) bool {
     return err == nil
 }
 
+func (s *PostgresDb) GetTodos(userId int) (ToDoArr, error) {
+	var todos ToDoArr= ToDoArr{}
+    query := `SELECT id, account_id, text, status FROM todo WHERE account_id = $1`
+    rows, err := s.db.Query(query, userId)
+    if err != nil {
+        return todos, err
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var todo ToDo
+        if err := rows.Scan(&todo.ID, &todo.UserId, &todo.Text, &todo.Status); err != nil {
+            return todos, err
+        }
+        todos.ToDos = append(todos.ToDos, todo)
+    }
+
+    if err := rows.Err(); err != nil {
+        return todos, err
+    }
+
+    return todos, nil
+}
+
+func (s *PostgresDb) RemoveTodo(todoId int) error{
+	query := `DELETE FROM todo WHERE id = $1`
+    _, err := s.db.Exec(query, todoId)
+    if err != nil {
+        return err
+    }
+	return nil
+}
